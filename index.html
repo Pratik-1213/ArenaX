@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Coding Competition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .code-editor {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            min-height: 300px;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div id="app" class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="text-center">
+            <h1 class="text-4xl font-bold mb-8 text-cyan-400">Coding Competition</h1>
+            <p class="mb-4">Your User ID: <span id="user-id-display" class="font-mono bg-gray-800 px-2 py-1 rounded"></span></p>
+            <div class="space-x-4">
+                <button id="admin-login-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                    Admin Login
+                </button>
+                <button id="competitor-login-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                    Join as Competitor
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="admin-view" class="hidden">
+            <h1 class="text-3xl font-bold mb-6 text-center text-indigo-400">Admin Panel</h1>
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4">Add New Question</h2>
+                <form id="add-question-form">
+                    <div class="mb-4">
+                        <label for="question-title" class="block text-sm font-medium text-gray-300 mb-1">Title</label>
+                        <input type="text" id="question-title" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="question-description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                        <textarea id="question-description" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="question-test-cases" class="block text-sm font-medium text-gray-300 mb-1">Test Cases (JSON format: [{"input": "...", "output": "..."}, ...])</label>
+                        <textarea id="question-test-cases" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">Add Question</button>
+                    </div>
+                </form>
+            </div>
+            <button id="admin-logout-btn" class="mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
+        </div>
+
+        <!-- Competitor View -->
+        <div id="competitor-view" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Problem Statement -->
+                <div class="lg:col-span-1 bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4 text-cyan-400">Problem</h2>
+                    <div id="problem-container">
+                        <p class="text-gray-400">Waiting for the admin to post a question...</p>
+                    </div>
+                </div>
+
+                <!-- Code Editor & Output -->
+                <div class="lg:col-span-2 bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4 text-cyan-400">Your Solution</h2>
+                    <div class="code-editor" id="code-editor" contenteditable="true" spellcheck="false"></div>
+                     <p class="text-xs text-yellow-400 mt-2">Warning: Code is executed in your browser. Assumes a function named 'solve' is defined, e.g., `function solve(input) { /* your code */ return result; }`</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <button id="submit-code-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105 disabled:bg-gray-500" disabled>Submit</button>
+                        <button id="competitor-logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="font-semibold text-lg">Output</h3>
+                        <pre id="output-area" class="bg-gray-900 p-4 rounded-md mt-2 min-h-[100px] text-gray-300"></pre>
+                    </div>
+                </div>
+            </div>
+             <!-- Leaderboard -->
+            <div class="mt-6 bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4 text-center text-cyan-400">Leaderboard</h2>
+                <div id="leaderboard">
+                    <p class="text-center text-gray-400">No submissions yet.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Message Modal -->
+        <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+            <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+                <p id="modal-message" class="text-lg mb-6"></p>
+                <button id="close-modal-btn" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Config and Initialization ---
+        // WARNING: Hardcoding keys is a security risk for public sites.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpBEAu6fdRzHUYUpE94FhTXcn-JOu94e0",
+            authDomain: "arenax-2ae95.firebaseapp.com",
+            projectId: "arenax-2ae95",
+            storageBucket: "arenax-2ae95.appspot.com",
+            messagingSenderId: "127032408099",
+            appId: "1:127032408099:web:c8a337afbb227766519996",
+            measurementId: "G-H2Y81RGM4M"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-coding-comp-app';
+        
+        let app, db, auth;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            const appDiv = document.getElementById('app');
+            appDiv.innerHTML = `<div class="bg-red-800 text-white p-8 rounded-lg text-center">
+                <h1 class="text-2xl font-bold">Application Error</h1>
+                <p class="mt-2">${error.message}</p>
+                <p class="mt-4 text-sm">This app cannot start without a valid Firebase configuration.</p>
+            </div>`;
+            // Stop all further script execution
+            throw new Error("Stopping script due to Firebase init failure.");
+        }
+
+        // --- Global State ---
+        let userId = null;
+        let userRole = null; // 'admin' or 'competitor'
+        let currentQuestionUnsubscribe = null;
+        let leaderboardUnsubscribe = null;
+        
+        // --- UI Elements ---
+        const authScreen = document.getElementById('auth-screen');
+        const adminView = document.getElementById('admin-view');
+        const competitorView = document.getElementById('competitor-view');
+        const userIdDisplay = document.getElementById('user-id-display');
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = userId;
+                const userDocRef = doc(db, `artifacts/${appId}/users`, userId);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists() && userDoc.data().role) {
+                    userRole = userDoc.data().role;
+                    if (userRole === 'admin') showAdminView();
+                    else showCompetitorView();
+                } else {
+                    showAuthScreen();
+                }
+            } else {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            }
+        });
+
+        // --- View Switching ---
+        function showAuthScreen() {
+            authScreen.classList.remove('hidden');
+            adminView.classList.add('hidden');
+            competitorView.classList.add('hidden');
+            if (currentQuestionUnsubscribe) currentQuestionUnsubscribe();
+            if (leaderboardUnsubscribe) leaderboardUnsubscribe();
+        }
+
+        function showAdminView() {
+            authScreen.classList.add('hidden');
+            adminView.classList.remove('hidden');
+            competitorView.classList.add('hidden');
+        }
+
+        function showCompetitorView() {
+            authScreen.classList.add('hidden');
+            adminView.classList.add('hidden');
+            competitorView.classList.remove('hidden');
+            listenForCurrentQuestion();
+            listenForLeaderboard();
+        }
+        
+        // --- Modal Logic ---
+        const messageModal = document.getElementById('message-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        function showModal(message) {
+            modalMessage.textContent = message;
+            messageModal.classList.remove('hidden');
+        }
+
+        closeModalBtn.addEventListener('click', () => {
+            messageModal.classList.add('hidden');
+        });
+
+        // --- Role Selection ---
+        document.getElementById('admin-login-btn').addEventListener('click', async () => {
+            userRole = 'admin';
+            await setDoc(doc(db, `artifacts/${appId}/users`, userId), { role: 'admin' });
+            showAdminView();
+        });
+
+        document.getElementById('competitor-login-btn').addEventListener('click', async () => {
+            userRole = 'competitor';
+            await setDoc(doc(db, `artifacts/${appId}/users`, userId), { role: 'competitor' });
+            showCompetitorView();
+        });
+        
+        // --- Logout ---
+        async function handleLogout() {
+            const userDocRef = doc(db, `artifacts/${appId}/users`, userId);
+            await setDoc(userDocRef, { role: null }, { merge: true }); // Clear role on logout
+            await signOut(auth);
+            // onAuthStateChanged will handle showing the auth screen after sign out
+        }
+        document.getElementById('admin-logout-btn').addEventListener('click', handleLogout);
+        document.getElementById('competitor-logout-btn').addEventListener('click', handleLogout);
+
+
+        // --- Admin Functionality ---
+        const addQuestionForm = document.getElementById('add-question-form');
+        addQuestionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('question-title').value;
+            const description = document.getElementById('question-description').value;
+            const testCasesRaw = document.getElementById('question-test-cases').value;
+
+            try {
+                const testCases = JSON.parse(testCasesRaw);
+                const questionData = { title, description, testCases, createdAt: serverTimestamp() };
+                await setDoc(doc(db, `artifacts/${appId}/public/data/active_question`, "current"), questionData);
+                await setDoc(doc(db, `artifacts/${appId}/public/data/leaderboard`, "current"), { submissions: [] });
+                showModal("Question added and set as active!");
+                addQuestionForm.reset();
+            } catch (error) {
+                console.error("Error adding question: ", error);
+                showModal("Invalid JSON in test cases. Please check the format.");
+            }
+        });
+
+        // --- Competitor Functionality ---
+        const problemContainer = document.getElementById('problem-container');
+        const codeEditor = document.getElementById('code-editor');
+        const submitCodeBtn = document.getElementById('submit-code-btn');
+        const outputArea = document.getElementById('output-area');
+
+        function listenForCurrentQuestion() {
+            const questionRef = doc(db, `artifacts/${appId}/public/data/active_question`, "current");
+            if (currentQuestionUnsubscribe) currentQuestionUnsubscribe();
+
+            currentQuestionUnsubscribe = onSnapshot(questionRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const question = docSnap.data();
+                    problemContainer.innerHTML = `
+                        <h3 class="text-xl font-semibold mb-2">${question.title}</h3>
+                        <p class="text-gray-300 whitespace-pre-wrap">${question.description}</p>
+                    `;
+                    submitCodeBtn.disabled = false;
+                } else {
+                    problemContainer.innerHTML = `<p class="text-gray-400">Waiting for the admin to post a question...</p>`;
+                    submitCodeBtn.disabled = true;
+                }
+            });
+        }
+
+        submitCodeBtn.addEventListener('click', async () => {
+            const userCode = codeEditor.innerText;
+            outputArea.textContent = 'Running your code...';
+            submitCodeBtn.disabled = true;
+
+            try {
+                // DANGER: new Function() is insecure and can lead to XSS attacks.
+                // This is a simplified approach for demonstration only.
+                // A real-world application requires a secure, sandboxed execution environment.
+                const questionDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/active_question`, "current"));
+                if (!questionDoc.exists()) {
+                    showModal("No active question found!");
+                    return;
+                }
+                const testCases = questionDoc.data().testCases;
+                let allTestsPassed = true;
+                let outputLog = "";
+
+                for (const testCase of testCases) {
+                    try {
+                        const userFunction = new Function('return ' + userCode)();
+                        const result = userFunction(testCase.input);
+                        const resultStr = JSON.stringify(result);
+                        const expectedStr = JSON.stringify(testCase.output);
+
+                        if (resultStr === expectedStr) {
+                            outputLog += `✅ Test with input "${JSON.stringify(testCase.input)}" passed!\n`;
+                        } else {
+                            outputLog += `❌ Test with input "${JSON.stringify(testCase.input)}" failed.\nExpected: ${expectedStr}, Got: ${resultStr}\n`;
+                            allTestsPassed = false;
+                        }
+                    } catch (e) {
+                         outputLog += `❌ Error during execution: ${e.message}\n`;
+                         allTestsPassed = false;
+                         break;
+                    }
+                }
+                outputArea.textContent = outputLog;
+
+                if (allTestsPassed) {
+                    showModal("Congratulations! All test cases passed!");
+                    await recordSolve();
+                }
+
+            } catch (error) {
+                console.error("Code submission error: ", error);
+                outputArea.textContent = `An error occurred: ${error.message}`;
+            } finally {
+                submitCodeBtn.disabled = false;
+            }
+        });
+        
+        async function recordSolve() {
+            const leaderboardRef = doc(db, `artifacts/${appId}/public/data/leaderboard`, "current");
+            const leaderboardDoc = await getDoc(leaderboardRef);
+
+            if (leaderboardDoc.exists()) {
+                const submissions = leaderboardDoc.data().submissions || [];
+                if (!submissions.some(s => s.userId === userId)) {
+                    // Use serverTimestamp for cheat-proof timing
+                    const newSubmissions = [...submissions, { userId, solvedAt: serverTimestamp() }];
+                    await setDoc(leaderboardRef, { submissions: newSubmissions });
+                }
+            }
+        }
+
+        // --- Leaderboard ---
+        const leaderboardDiv = document.getElementById('leaderboard');
+        
+        function listenForLeaderboard() {
+            const leaderboardRef = doc(db, `artifacts/${appId}/public/data/leaderboard`, "current");
+            if (leaderboardUnsubscribe) leaderboardUnsubscribe();
+
+            leaderboardUnsubscribe = onSnapshot(leaderboardRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const submissions = data.submissions || [];
+                    
+                    // Sort by solved time. Handle cases where timestamp is still pending on server.
+                    submissions.sort((a, b) => {
+                        const timeA = a.solvedAt?.toMillis() || Infinity;
+                        const timeB = b.solvedAt?.toMillis() || Infinity;
+                        return timeA - timeB;
+                    });
+
+                    if (submissions.length > 0) {
+                        leaderboardDiv.innerHTML = `
+                            <ul class="space-y-3">
+                                ${submissions.map((sub, index) => `
+                                    <li class="flex justify-between items-center bg-gray-700 p-3 rounded-lg">
+                                        <span class="font-semibold text-lg ${index === 0 ? 'text-yellow-400' : ''}">
+                                            ${index + 1}. ${sub.userId === userId ? 'You' : sub.userId.substring(0, 8) + '...'}
+                                            ${index === 0 ? '🏆' : ''}
+                                        </span>
+                                        <span class="text-sm text-gray-400">
+                                            Solved!
+                                        </span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        `;
+                    } else {
+                        leaderboardDiv.innerHTML = `<p class="text-center text-gray-400">No one has solved the problem yet. Be the first!</p>`;
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
